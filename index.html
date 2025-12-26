@@ -219,7 +219,8 @@
                     
                     <!-- ALERTA CRÍTICO (RADAR DE EVENTOS) -->
                     <div id="alert-critical-card" class="bg-gray-50 border-l-4 border-gray-300 p-3 rounded-r-md shadow-sm transition-all duration-300 opacity-50">
-                        <div class="flex items-center gap-2 text-gray-600 font-bold text-xs uppercase mb-2">
+                        <!-- Added ID for direct access -->
+                        <div id="alert-critical-header" class="flex items-center gap-2 text-gray-600 font-bold text-xs uppercase mb-2">
                             <i data-lucide="alert-triangle" class="w-4 h-4"></i> Próximos Eventos Críticos
                         </div>
                         <div id="alert-critical-content" class="text-sm text-gray-500 italic space-y-1">
@@ -543,7 +544,7 @@
                             </div>
                         </form>
                         <div className="mt-6 text-center text-xs text-gray-400">
-                            v6.8 Secure Mobile Edition
+                            v6.11 Secure Mobile Edition
                         </div>
                     </div>
                 </div>
@@ -713,6 +714,7 @@
             const today = new Date(todayStr + "T12:00:00");
             
             const alertBox = document.getElementById('alert-critical-card');
+            const alertHeader = document.getElementById('alert-critical-header');
             const alertContent = document.getElementById('alert-critical-content');
             const pageBanner = document.getElementById('page-crit-banner');
             
@@ -721,7 +723,7 @@
                     const eDate = new Date(e.date + "T12:00:00");
                     const diffTime = eDate - today;
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    return { ...e, diffDays, eDate };
+                    return { ...e, diffDays, eDate, id: e.id };
                 })
                 .filter(e => e.diffDays >= 0) 
                 .sort((a,b) => a.diffDays - b.diffDays);
@@ -743,10 +745,13 @@
                         pageBanner.innerText = `🚨 ALERTA: ${ev.desc}`;
                     }
                     
-                    html += `<div class="mb-1 ${styleClass} border-b border-gray-100 pb-1 last:border-0">
-                        <span class="font-bold text-xs mr-1">${dateFmt}</span>
-                        <span class="text-[10px] opacity-75 mr-1">${timeStr}</span>
-                        <span>${ev.desc}</span>
+                    html += `<div class="mb-1 ${styleClass} border-b border-gray-100 pb-1 last:border-0 flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-xs mr-1">${dateFmt}</span>
+                            <span class="text-[10px] opacity-75 mr-1">${timeStr}</span>
+                            <span>${ev.desc}</span>
+                        </div>
+                        <button onclick="deleteCritical(${ev.id})" class="text-gray-400 hover:text-red-600 text-xs ml-2" title="Excluir">🗑️</button>
                     </div>`;
                 });
 
@@ -755,19 +760,19 @@
                 if(isTodayCrit) {
                     alertBox.classList.remove('opacity-50', 'bg-gray-50', 'border-gray-300');
                     alertBox.classList.add('bg-red-50', 'border-red-500', 'animate-pulse');
-                    alertBox.querySelector('.lucide-alert-triangle').parentElement.classList.remove('text-gray-600');
-                    alertBox.querySelector('.lucide-alert-triangle').parentElement.classList.add('text-red-700');
+                    alertHeader.classList.remove('text-gray-600');
+                    alertHeader.classList.add('text-red-700');
                 } else {
                     alertBox.classList.remove('opacity-50', 'bg-gray-50', 'border-gray-300', 'animate-pulse');
                     alertBox.classList.add('bg-orange-50', 'border-orange-400');
-                    alertBox.querySelector('.lucide-alert-triangle').parentElement.classList.remove('text-gray-600');
-                    alertBox.querySelector('.lucide-alert-triangle').parentElement.classList.add('text-orange-700');
+                    alertHeader.classList.remove('text-gray-600');
+                    alertHeader.classList.add('text-orange-700');
                     pageBanner.style.display = 'none';
                 }
             } else {
                 alertContent.innerText = 'Nenhum evento registrado.';
                 alertBox.className = "bg-gray-50 border-l-4 border-gray-300 p-3 rounded-r-md shadow-sm transition-all duration-300 opacity-50"; 
-                alertBox.querySelector('.lucide-alert-triangle').parentElement.className = "flex items-center gap-2 text-gray-600 font-bold text-xs uppercase mb-2";
+                alertHeader.className = "flex items-center gap-2 text-gray-600 font-bold text-xs uppercase mb-2";
                 pageBanner.style.display = 'none';
             }
             saveState();
@@ -810,10 +815,12 @@
         // --- 5. CORE LOGIC (Preserved) ---
         function renderDailyTimeline() {
             const el = document.getElementById('daily-timeline');
-            if(el.innerHTML.trim() === '') {
+            if(!el.querySelector('.time-slot')) {
+                let html = '';
                 for(let h=7; h<=23; h++) {
-                    el.innerHTML += `<div class="time-slot"><div class="ts-label">${h.toString().padStart(2,'0')}:00</div><div style="flex:1;" contenteditable="true"></div></div>`;
+                    html += `<div class="time-slot"><div class="ts-label">${h.toString().padStart(2,'0')}:00</div><div style="flex:1;" contenteditable="true"></div></div>`;
                 }
+                el.insertAdjacentHTML('afterbegin', html);
             }
         }
 
@@ -903,12 +910,23 @@
             const dt = document.getElementById('new-crit-date').value;
             const desc = document.getElementById('new-crit-desc').value;
             if(!dt || !desc) return;
-            state.events.push({date: dt, desc: desc});
+            state.events.push({date: dt, desc: desc, id: Date.now()}); // Added ID
             alert("Evento Salvo! Verifique Diário/Semanal.");
             saveState();
             renderMonthly();
             checkCritical(); 
         }
+
+        function deleteCritical(id) {
+            if(confirm('Tem certeza que deseja remover este evento?')) {
+                state.events = state.events.filter(e => e.id !== id);
+                saveState();
+                renderMonthly();
+                renderWeekly();
+                checkCritical();
+            }
+        }
+
         function renderMonthly() {
             const grid = document.getElementById('month-grid'); grid.innerHTML = '';
             const val = document.getElementById('month-start').value;
@@ -929,7 +947,7 @@
                 if(!ev && (wd===1 || wd===3 || wd===4 || wd===5)) div.innerHTML += `<div class="event-tag tag-shift">PLANTÃO</div>`;
                 grid.appendChild(div);
             }
-            document.getElementById('month-title').innerText = new Date(val).toLocaleString('pt-BR', {month:'long'}).toUpperCase();
+            document.getElementById('month-title').innerText = new Date(val + "T12:00:00").toLocaleString('pt-BR', {month:'long'}).toUpperCase();
         }
 
         // --- ANNUAL ---
@@ -1061,8 +1079,12 @@
         }
         projSelect.value = state.currentProjId;
 
-        setTemplate('A-seg');
+        // Force checkCritical on load to populate sidebar
+        checkCritical();
+        
+        // ... rest of init calls ...
         renderDailyTimeline();
+        setTemplate('A-seg');
         loadDailyInputs();
         renderWeekly();
         renderMonthly();
