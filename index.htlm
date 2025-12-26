@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planner OS - Secure Access</title>
+    
+    <!-- 1. CDNs para React e ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- 2. CDN para Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 3. CDN para Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 4. Biblioteca html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- 5. Biblioteca Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- ESTILOS DO PLANNER -->
+    <style>
+        :root {
+            --sidebar-width: 300px;
+            --bg-app: #f3f4f6; /* gray-100 */
+            --bg-panel: #ffffff;
+            --primary: #000000;
+            --text: #333;
+            --block-gray: #E0E0E0;
+            --block-dark: #CCCCCC;
+            --alert-green: #2ecc71;
+            --alert-yellow: #f1c40f;
+            --line-pattern: repeating-linear-gradient(transparent, transparent 29px, #ccc 30px);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-app);
+            overflow: hidden;
+        }
+
+        /* Container Principal do Planner (Flex Vertical) */
+        #planner-app {
+            display: none; /* Oculto até login */
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Classes de Transição para Sidebar */
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+        }
+
+        /* --- ESTILOS ESPECÍFICOS DO CONTEÚDO --- */
+        
+        /* EDITABLE AREAS STYLING */
+        [contenteditable="true"]:focus {
+            outline: 2px solid #e5e7eb;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* PAPER SIMULATION */
+        .paper { 
+            background: white; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: none; 
+            position: relative; 
+            margin-top: 60px;    /* Espaço para o cabeçalho de controles */
+            margin-bottom: 100px; /* Espaço extra para rolar até o fim */
+        }
+        .paper.active { display: block; }
+        .a4-portrait { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; }
+        .a4-landscape { width: 297mm; height: 210mm; padding: 10mm; box-sizing: border-box; }
+
+        @media (max-width: 1024px) { 
+            .main-scroll-area {
+                padding: 10px !important;
+            }
+            .paper {
+                margin: 60px auto 100px auto;
+            }
+        }
+
+        /* DAILY PLANNER GRID */
+        .daily-grid { display: flex; flex-direction: column; height: 100%; }
+        .daily-header { display: flex; justify-content: space-between; border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 15px; }
+        .daily-date-group { width: 40%; }
+        .daily-prio-group { width: 55%; }
+        .big-day-label { font-size: 1.4rem; font-weight: 900; text-transform: uppercase; margin-top: 5px; }
+        .prio-row { display: flex; align-items: center; margin-bottom: 6px; }
+        .prio-check { width: 18px; height: 18px; border: 2px solid black; margin-right: 8px; cursor: pointer; flex-shrink: 0; }
+        .prio-check.checked { background: black; }
+        .prio-input { border: none; border-bottom: 1px solid #ccc; width: 100%; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .prio-input.done { text-decoration: line-through; color: #aaa; }
+        .daily-body { display: flex; flex-grow: 1; gap: 20px; }
+        .col-time { width: 60%; border-right: 1px solid #ccc; padding-right: 15px; display: flex; flex-direction: column; }
+        .col-dump { width: 40%; display: flex; flex-direction: column; }
+        .time-header { background: black; color: white; text-align: center; font-weight: bold; font-size: 0.8rem; padding: 2px; margin-bottom: 5px; }
+        .timeline-box { flex-grow: 1; position: relative; display: flex; flex-direction: column; }
+        .time-slot { flex: 1; border-bottom: 1px solid #e0e0e0; display: flex; position: relative; }
+        .ts-label { width: 40px; font-size: 0.75rem; font-weight: bold; color: #555; text-align: right; padding-right: 8px; border-right: 1px solid #ccc; padding-top: 2px; }
+        .block-routine { position: absolute; left: 45px; right: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; border-left: 4px solid #666; opacity: 0.95; z-index: 5; pointer-events: none; }
+        .block-grey { background-color: var(--block-gray); color: #333; }
+        .block-dark { background-color: #333; color: #fff; border-left-color: #000; }
+        .block-alert { background-color: #fff3cd; color: #856404; border-left-color: #ffc107; }
+        .dump-lines { flex-grow: 1; background-image: var(--line-pattern); border-top: 1px solid #ccc; line-height: 30px; font-size: 0.9rem; padding-left: 5px; }
+        .daily-footer { border-top: 2px solid black; padding-top: 10px; margin-top: 10px; display: flex; justify-content: space-between; font-size: 0.8rem; }
+
+        /* WEEKLY GRID */
+        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); height: 85%; border-left: 1px solid #eee; border-top: 1px solid #000; }
+        .wk-col { border-right: 1px solid #000; display: flex; flex-direction: column; position: relative; }
+        .wk-col:last-child { border-right: none; }
+        .wk-header { text-align: center; padding: 5px; border-bottom: 1px solid #000; background: #fff; font-weight: bold; font-size: 0.8rem; }
+        .wk-body { flex-grow: 1; position: relative; background-image: repeating-linear-gradient(transparent, transparent 19px, #f8f8f8 20px); font-size: 0.8rem; line-height: 20px; }
+        .wk-footer { height: 25px; border-top: 1px solid #000; display: flex; justify-content: space-around; align-items: center; font-size: 0.7rem; }
+
+        /* MONTHLY GRID */
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: auto repeat(5, 1fr); height: 80%; border: 1px solid #000; }
+        .m-head { background: #eee; text-align: center; font-weight: bold; padding: 5px; border-bottom: 2px solid #000; font-size: 0.8rem; }
+        .m-cell { border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; padding: 5px; position: relative; display: flex; flex-direction: column; }
+        .m-cell:nth-child(7n) { border-right: none; background: #fcfcfc; }
+        .m-content { flex-grow: 1; font-size: 0.75rem; }
+        .event-tag { font-size: 0.6rem; padding: 2px; margin-top: 2px; font-weight: bold; }
+        .tag-shift { background: #333; color: white; }
+        .tag-crit { background: #c0392b; color: white; }
+
+        /* PROJECTS */
+        .proj-layout { display: flex; flex-direction: column; height: 100%; }
+        .proj-head { border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 20px; }
+        .proj-input-title { font-size: 1.8rem; font-weight: 900; text-transform: uppercase; width: 100%; border: none; border-bottom: 1px dotted #ccc; }
+        .proj-split { display: flex; flex-grow: 1; gap: 20px; }
+        .proj-col-l { width: 40%; border-right: 1px solid #ccc; padding-right: 15px; display: flex; flex-direction: column; }
+        .proj-col-r { width: 60%; display: flex; flex-direction: column; }
+        .proj-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .btn-add-line { width: 100%; padding: 5px; background: #f0f0f0; text-align: center; border: 1px dashed #999; margin-top: 10px; cursor: pointer; font-size: 0.7rem; }
+
+        /* CONTEXTS */
+        .ctx-container { display: flex; flex-direction: column; gap: 20px; height: 100%; }
+        .ctx-box { border: 1px solid #ccc; flex: 1; display: flex; flex-direction: column; }
+        .ctx-title { background: #000; color: white; padding: 5px 10px; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; }
+        .ctx-list { padding: 10px; flex-grow: 1; overflow: hidden; }
+
+        /* MODAL */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .modal-box { background: white; padding: 20px; border-radius: 8px; max-width: 90%; max-height: 90%; overflow: auto; text-align: center; }
+        .modal img { max-width: 100%; border: 1px solid #ccc; margin: 10px 0; }
+
+        /* Custom Scrollbar for Nav */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden">
+
+    <!-- 1. REACT LOGIN ROOT -->
+    <div id="login-root"></div>
+
+    <!-- 2. PLANNER OS APP CONTAINER -->
+    <div id="planner-app">
+        
+        <!-- HEADER / TOP NAVIGATION -->
+        <header class="h-16 bg-gray-900 text-white flex items-center justify-between px-4 shadow-lg z-50 shrink-0">
+            <div class="flex items-center gap-4">
+                <!-- Hamburger Menu Button -->
+                <button onclick="toggleSidebar()" class="p-2 hover:bg-gray-700 rounded-md transition-colors focus:outline-none">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div class="font-black text-xl tracking-wider hidden sm:block">PLANNER <span class="text-gray-400">OS</span></div>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="flex gap-2 overflow-x-auto hide-scroll px-2 items-center flex-1 sm:flex-none justify-start sm:justify-end">
+                <button class="nav-top-btn active flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('daily')">
+                    <i data-lucide="calendar" class="w-4 h-4"></i> <span class="hidden md:inline">Diário</span>
+                </button>
+                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('weekly')">
+                    <i data-lucide="calendar-range" class="w-4 h-4"></i> <span class="hidden md:inline">Semanal</span>
+                </button>
+                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('monthly')">
+                    <i data-lucide="calendar-days" class="w-4 h-4"></i> <span class="hidden md:inline">Mensal</span>
+                </button>
+                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('annual')">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i> <span class="hidden md:inline">Anual</span>
+                </button>
+                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('projects')">
+                    <i data-lucide="rocket" class="w-4 h-4"></i> <span class="hidden md:inline">Projetos</span>
+                </button>
+                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('contexts')">
+                    <i data-lucide="list-todo" class="w-4 h-4"></i> <span class="hidden md:inline">Contexto</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden relative">
+            
+            <!-- OVERLAY (Mobile) -->
+            <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+
+            <!-- BARRA LATERAL (ALERTAS) -->
+            <nav id="sidebar" class="sidebar-transition absolute lg:relative w-80 bg-white border-r border-gray-200 h-full z-40 transform -translate-x-full lg:translate-x-0 flex flex-col shadow-xl lg:shadow-none">
+                
+                <div class="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between lg:hidden">
+                    <span class="font-bold text-gray-700">ALERTAS & HUD</span>
+                    <button onclick="toggleSidebar()" class="text-gray-500"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    
+                    <!-- ALERTA CRÍTICO (RADAR DE EVENTOS) -->
+                    <div id="alert-critical-card" class="bg-gray-50 border-l-4 border-gray-300 p-3 rounded-r-md shadow-sm transition-all duration-300 opacity-50">
+                        <div class="flex items-center gap-2 text-gray-600 font-bold text-xs uppercase mb-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Próximos Eventos Críticos
+                        </div>
+                        <div id="alert-critical-content" class="text-sm text-gray-500 italic space-y-1">
+                            Nenhum evento registrado.
+                        </div>
+                    </div>
+
+                    <!-- PRIORIDADES -->
+                    <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded-r-md shadow-sm">
+                        <div class="flex items-center gap-2 text-green-700 font-bold text-xs uppercase mb-2">
+                            <i data-lucide="target" class="w-4 h-4"></i> Prioridades do Dia
+                        </div>
+                        <div id="alert-priority-content" class="text-sm text-gray-600 italic">Defina no Diário...</div>
+                    </div>
+
+                    <!-- RISCO -->
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-r-md shadow-sm">
+                        <div class="flex items-center gap-2 text-yellow-700 font-bold text-xs uppercase mb-2">
+                            <i data-lucide="alert-circle" class="w-4 h-4"></i> Risco Procrastinação
+                        </div>
+                        <div id="alert-risk-content" class="text-sm text-gray-600 italic">Nenhum risco.</div>
+                    </div>
+
+                    <!-- COMPRAS -->
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-md shadow-sm">
+                        <div class="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase mb-2">
+                            <i data-lucide="shopping-cart" class="w-4 h-4"></i> Compras / Farmácia
+                        </div>
+                        <div id="alert-shopping-content" class="text-sm text-gray-600 italic">Lista vazia.</div>
+                    </div>
+
+                </div>
+
+                <div class="p-4 border-t border-gray-200 bg-gray-50">
+                    <button onclick="generateImage()" class="w-full bg-black text-white py-3 rounded-lg font-bold shadow hover:bg-gray-800 transition-colors flex flex-col items-center justify-center">
+                        <span class="flex items-center gap-2"><i data-lucide="camera" class="w-4 h-4"></i> GERAR IMAGEM</span>
+                        <span class="text-[10px] font-normal opacity-70 mt-1">Auto-Detectar Formato (A4)</span>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- ÁREA PRINCIPAL -->
+            <main class="main-scroll-area flex-1 bg-gray-200 overflow-auto p-4 lg:p-8 flex justify-center items-start relative transition-all">
+                
+                <!-- 1. DIÁRIO (RETRATO) -->
+                <div id="view-daily" class="paper a4-portrait active" data-orientation="portrait">
+                    <div class="absolute -top-12 left-0 w-full flex gap-2 overflow-x-auto hide-scroll pb-2">
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('A-seg')">A: Sobrev. (SEG)</button>
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('F-folga')">F: Folga (SEG)</button>
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('A-ter')">A: Terça Pós</button>
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('G-ter')">G: Terça Folga</button>
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('B-manut')">B: Manut. (Q/S)</button>
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('B-qui')">B: Quinta</button>
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('C-ataque')">C: Ataque</button>
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('D-hmv')">D: HMV Dia</button>
+                        <button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold hover:bg-gray-100 whitespace-nowrap" onclick="setTemplate('E-hmv')">E: HMV Noite</button>
+                    </div>
+
+                    <div class="daily-grid">
+                        <div id="page-crit-banner" class="bg-red-100 border border-red-400 text-red-700 px-2 py-1 text-center font-bold text-sm mb-4 hidden rounded"></div>
+                        <div class="daily-header">
+                            <div class="daily-date-group">
+                                <div class="text-xs text-gray-500 font-bold">DATA</div>
+                                <input type="date" id="daily-date" class="border-none text-lg font-inherit focus:outline-none" onchange="syncDate()">
+                                <div id="day-label" class="big-day-label" contenteditable="true">SEGUNDA-FEIRA</div>
+                            </div>
+                            <div class="daily-prio-group">
+                                <div class="text-xs font-black uppercase border-b-2 border-black mb-1">Top 3 Prioridades (HUD)</div>
+                                <div class="prio-row"><div class="prio-check" onclick="togglePrio(1, this)"></div><input id="p1" class="prio-input" placeholder="1. Inegociável" oninput="updateHUD()"></div>
+                                <div class="prio-row"><div class="prio-check" onclick="togglePrio(2, this)"></div><input id="p2" class="prio-input" placeholder="2. Importante" oninput="updateHUD()"></div>
+                                <div class="prio-row"><div class="prio-check" onclick="togglePrio(3, this)"></div><input id="p3" class="prio-input" placeholder="3. Desejável" oninput="updateHUD()"></div>
+                            </div>
+                        </div>
+                        <div class="daily-body">
+                            <div class="col-time">
+                                <div class="time-header">AGENDA (07:00 - 23:00)</div>
+                                <div id="daily-timeline" class="timeline-box"></div>
+                            </div>
+                            <div class="col-dump">
+                                <div class="font-black border-b-2 border-black mb-2">BRAIN DUMP 🧠</div>
+                                <div id="daily-mode-badge" class="border-2 border-black p-1 text-center font-bold mb-2 hidden bg-white">🎯 MODO ATAQUE</div>
+                                <div class="dump-lines" contenteditable="true"></div>
+                            </div>
+                        </div>
+                        <div class="daily-footer">
+                            <div>💧 Hidratação: ○○○○○ ○○○○○</div>
+                            <div>💤 Sono: ____h</div>
+                            <div>🏋️ Treino: [ ]</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. SEMANAL (PAISAGEM) -->
+                <div id="view-weekly" class="paper a4-landscape" data-orientation="landscape">
+                    <div class="absolute -top-12 left-0 w-full flex gap-2 items-center bg-white p-2 rounded shadow-sm">
+                        <input type="date" id="week-start" onchange="renderWeekly()" class="border border-gray-300 rounded px-2 py-1 text-sm">
+                        <button class="px-3 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-bold hover:bg-gray-200" onclick="toggleWeekRoutine()">Alternar Rotina Fixa</button>
+                    </div>
+                    <div class="flex justify-between items-end border-b-4 border-black mb-2 pb-1">
+                        <h1 class="text-2xl font-bold m-0">PLANEJAMENTO SEMANAL</h1>
+                        <div id="week-label" class="font-bold">Semana: __ a __</div>
+                    </div>
+                    <div id="week-crit-banner" class="bg-red-100 text-red-800 p-1 mb-2 text-xs font-bold hidden rounded"></div>
+                    <div id="week-grid" class="week-grid"></div>
+                </div>
+
+                <!-- 3. MENSAL (PAISAGEM) -->
+                <div id="view-monthly" class="paper a4-landscape" data-orientation="landscape">
+                    <div class="absolute -top-12 left-0 w-full flex gap-2 items-center bg-white p-2 rounded shadow-sm overflow-x-auto hide-scroll">
+                        <input type="date" id="month-start" value="2025-12-01" class="border border-gray-300 rounded px-2 py-1 text-sm">
+                        <button class="px-3 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-bold hover:bg-gray-200" onclick="renderMonthly()">Atualizar</button>
+                        <div class="border-l border-gray-400 pl-2 flex items-center gap-2">
+                            <span class="text-xs font-bold whitespace-nowrap">Novo Evento Crítico:</span>
+                            <input type="date" id="new-crit-date" class="border border-gray-300 rounded px-1 py-1 text-xs">
+                            <input type="text" id="new-crit-desc" placeholder="Ex: Prova" class="border border-gray-300 rounded px-1 py-1 text-xs w-32">
+                            <button class="px-3 py-1 bg-black text-white rounded text-xs font-bold hover:bg-gray-800" onclick="addCritical()">Salvar</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center border-b-4 border-black mb-2 pb-2">
+                        <h1 id="month-title" class="text-3xl font-black uppercase m-0">MÊS</h1>
+                        <div class="border border-gray-400 p-2 w-48 h-12 relative">
+                            <div class="text-[10px] font-bold">FOCO DO MÊS:</div>
+                            <div class="absolute inset-0 pt-4 px-2 text-sm" contenteditable="true"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-7 text-center font-bold bg-gray-200 p-1 border border-black border-b-0 text-sm">
+                        <div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div><div>DOM</div>
+                    </div>
+                    <div id="month-grid" class="month-grid"></div>
+                </div>
+
+                <!-- 4. ANUAL (PAISAGEM) -->
+                <div id="view-annual" class="paper a4-landscape" data-orientation="landscape">
+                    <div class="absolute -top-12 left-0 w-full flex gap-2 items-center bg-white p-2 rounded shadow-sm">
+                        <input type="number" id="year-val" value="2026" class="border border-gray-300 rounded px-2 py-1 text-sm w-20">
+                        <button class="px-3 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-bold hover:bg-gray-200" onclick="renderAnnual()">Atualizar</button>
+                    </div>
+                    <h1 class="border-b-4 border-black mb-4 text-2xl font-black">ROADMAP ANUAL <span id="year-disp">2026</span></h1>
+                    <div class="grid grid-cols-4 gap-4 h-[80%]">
+                        <div id="q1" class="flex flex-col gap-2"></div>
+                        <div id="q2" class="flex flex-col gap-2"></div>
+                        <div id="q3" class="flex flex-col gap-2"></div>
+                        <div id="q4" class="flex flex-col gap-2"></div>
+                    </div>
+                </div>
+
+                <!-- 5. PROJETOS (RETRATO) -->
+                <div id="view-projects" class="paper a4-portrait" data-orientation="portrait">
+                    <div class="absolute -top-12 left-0 w-full flex gap-2 items-center bg-white p-2 rounded shadow-sm">
+                        <button class="px-3 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-bold hover:bg-gray-200" onclick="newProject()">+ Novo</button>
+                        <select id="proj-select" onchange="loadProject(this.value)" class="border border-gray-300 rounded px-2 py-1 text-sm">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="proj-layout">
+                        <div class="proj-head">
+                            <div class="text-xs font-bold text-gray-500">PROJETO ATIVO / RISCO</div>
+                            <input id="proj-title" class="proj-input-title" value="NOME DO PROJETO" oninput="saveProj()">
+                            <div class="mt-2 bg-gray-100 p-2 border-l-4 border-black">
+                                <div class="text-[10px] font-bold">MOTIVAÇÃO / PORQUÊ:</div>
+                                <input id="proj-why" class="w-full border-none bg-transparent italic text-sm focus:outline-none" oninput="saveProj()">
+                            </div>
+                        </div>
+                        <div class="proj-split">
+                            <div class="proj-col-l">
+                                <div class="font-black border-b-2 border-black mb-1 text-sm">FASES / MARCOS</div>
+                                <div id="proj-phases"></div>
+                                <div class="btn-add-line" onclick="addProjItem('phase')">+ Fase</div>
+                            </div>
+                            <div class="proj-col-r">
+                                <div class="font-black border-b-2 border-black mb-1 text-sm">PRÓXIMAS AÇÕES FÍSICAS</div>
+                                <div id="proj-actions"></div>
+                                <div class="btn-add-line" onclick="addProjItem('action')">+ Ação</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. CONTEXTOS (RETRATO) -->
+                <div id="view-contexts" class="paper a4-portrait" data-orientation="portrait">
+                    <div class="absolute -top-12 left-0 w-full flex gap-2 items-center bg-white p-2 rounded shadow-sm">
+                        <button class="px-3 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-bold hover:bg-gray-200" onclick="resetContexts()">Limpar Todos</button>
+                    </div>
+                    <h1 class="border-b-4 border-black mb-4 pb-2 text-2xl font-black">LISTAS DE CONTEXTO (GTD)</h1>
+                    <div class="ctx-container">
+                        <div class="ctx-box">
+                            <div class="ctx-title">🏡 @CASA (Manutenção)</div>
+                            <div id="ctx-casa" class="ctx-list"></div>
+                        </div>
+                        <div class="ctx-box">
+                            <div class="ctx-title">🛒 @COMPRAS (Rua/Web)</div>
+                            <div id="ctx-compras" class="ctx-list"></div>
+                        </div>
+                        <div class="ctx-box">
+                            <div class="ctx-title">📂 @PENDÊNCIAS ADM (Burocracia)</div>
+                            <div id="ctx-adm" class="ctx-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. MANUAL (RETRATO) -->
+                <div id="view-manual" class="paper a4-portrait" data-orientation="portrait">
+                    <h1 class="border-b-4 border-black mb-8 pb-2 text-3xl font-black">PROTOCOLO DE EXECUÇÃO</h1>
+                    <div class="flex gap-4 mb-6">
+                        <div class="text-4xl">🎯</div>
+                        <div><div class="font-black text-lg">TRÍADE DO DIA</div><div class="text-sm">Priorização impiedosa. Apenas 3 focos. (Aparecem em VERDE).</div></div>
+                    </div>
+                    <div class="flex gap-4 mb-6">
+                        <div class="text-4xl">⚠️</div>
+                        <div><div class="font-black text-lg">RISCO DE PROCRASTINAÇÃO</div><div class="text-sm">Tarefas chatas mas necessárias. (Aparecem em AMARELO).</div></div>
+                    </div>
+                    <div class="bg-gray-100 p-6 border-l-4 border-black mt-10">
+                        <div class="font-black mb-2 text-lg">🏅 REGRAS DE OURO</div>
+                        <div class="mb-2" contenteditable="true">🌙 <strong>Ritual da Véspera:</strong> Planeje às 20h.</div>
+                        <div contenteditable="true">🔄 <strong>Flexibilidade:</strong> Se sair do trilho, risque e siga.</div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL DE IMAGEM -->
+    <div id="modal" class="modal" onclick="closeModal()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 class="font-bold text-lg mb-2">Imagem Gerada</h3>
+            <p class="text-xs text-gray-500 mb-4">Segure na imagem para salvar (Tablet) ou clique em Baixar (PC).</p>
+            <img id="img-preview" src="" class="mx-auto shadow-md">
+            <br>
+            <a id="dl-link" class="inline-block bg-black text-white px-6 py-2 rounded font-bold hover:bg-gray-800 transition-colors" style="text-decoration:none;">⬇️ Baixar Imagem</a>
+            <button class="ml-4 px-4 py-2 border border-gray-300 rounded hover:bg-gray-100" onclick="closeModal()">Fechar</button>
+        </div>
+    </div>
+
+    <!-- REACT LOGIN SCRIPT -->
+    <script type="text/babel">
+        function LoginScreen() {
+            const [password, setPassword] = React.useState('');
+            const [error, setError] = React.useState('');
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const CORRECT_PASSWORD = "neuro2025"; 
+
+                if (password === CORRECT_PASSWORD) {
+                    document.getElementById('login-root').style.display = 'none';
+                    const app = document.getElementById('planner-app');
+                    app.style.display = 'flex';
+                    
+                    // Init Icons
+                    if(window.lucide) window.lucide.createIcons();
+                    
+                    window.dispatchEvent(new Event('resize'));
+                } else {
+                    setError('Acesso Negado. Senha incorreta.');
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+                    <div className="max-w-md w-full bg-white rounded-lg shadow-xl overflow-hidden p-8">
+                        <div className="text-center mb-8">
+                            <h2 className="text-3xl font-extrabold text-gray-900">Planner OS</h2>
+                            <p className="mt-2 text-sm text-gray-600">Desenvolvido por Paulo Ricardo Lopes Sena</p>
+                        </div>
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700">Senha de Acesso</label>
+                                <input
+                                    type="password"
+                                    id="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black sm:text-sm"
+                                    placeholder="Digite sua senha..."
+                                />
+                            </div>
+                            {error && (
+                                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                    <span className="block sm:inline">{error}</span>
+                                </div>
+                            )}
+                            <div>
+                                <button
+                                    type="submit"
+                                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+                                >
+                                    Entrar no Sistema
+                                </button>
+                            </div>
+                        </form>
+                        <div className="mt-6 text-center text-xs text-gray-400">
+                            v6.7 Secure Mobile Edition
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('login-root'));
+        root.render(<LoginScreen />);
+    </script>
+
+    <!-- LOGICA ORIGINAL DO PLANNER (PRESERVADA) -->
+    <script>
+        // --- 1. STATE MANAGEMENT ---
+        // SAFE LOAD from LocalStorage
+        let state;
+        try {
+            state = JSON.parse(localStorage.getItem('plannerState'));
+        } catch (e) {
+            state = null;
+        }
+
+        // Initialize or Repair State
+        const defaultProjects = {
+            rotem: { title: "APP ROTEM", why: "Autonomia", phases: ["MVP", "Design"], actions: ["Definir regras"] },
+            mestrado: { title: "MESTRADO", why: "Título", phases: ["Ética", "Coleta"], actions: ["Email TI"] },
+            risk: { title: "RISCO PROCRASTINAÇÃO", why: "Evitar acumular", phases: ["Urgente", "Médio"], actions: ["Pagar boleto", "Agendar médico"] }
+        };
+        
+        // Add 10 blank projects to defaults
+        for (let i = 1; i <= 10; i++) {
+            defaultProjects[`blank_${i}`] = { 
+                title: `PROJETO EM BRANCO ${i}`, 
+                why: "Escreva o motivo aqui...", 
+                phases: ["Fase 1"], 
+                actions: ["Ação 1"] 
+            };
+        }
+
+        if (!state) {
+            state = {
+                activeView: 'view-daily',
+                events: [],
+                projects: defaultProjects,
+                currentProjId: 'rotem',
+                daily: { p1:'', p2:'', p3:'', date:'' },
+                contexts: { casa:[], compras:[], adm:[] }
+            };
+        } else {
+            // Repair missing projects object if corrupted
+            if (!state.projects) {
+                state.projects = defaultProjects;
+            } else {
+                // Ensure blank projects exist even in old state
+                for (let i = 1; i <= 10; i++) {
+                    const key = `blank_${i}`;
+                    if (!state.projects[key]) {
+                        state.projects[key] = defaultProjects[key];
+                    }
+                }
+            }
+            if (!state.currentProjId) state.currentProjId = 'rotem';
+        }
+
+        function saveState() {
+            localStorage.setItem('plannerState', JSON.stringify(state));
+        }
+
+        // --- 2. NAVIGATION & MOBILE TOGGLE ---
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebar-overlay');
+            if (sb.classList.contains('-translate-x-full')) {
+                sb.classList.remove('-translate-x-full');
+                if (window.innerWidth < 1024) ov.classList.remove('hidden');
+            } else {
+                sb.classList.add('-translate-x-full');
+                ov.classList.add('hidden');
+            }
+        }
+
+        function nav(viewId) {
+            if(window.innerWidth < 1024) {
+                const sb = document.getElementById('sidebar');
+                if (!sb.classList.contains('-translate-x-full')) toggleSidebar();
+            }
+
+            document.querySelectorAll('.paper').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-top-btn').forEach(el => el.classList.remove('bg-gray-800', 'text-white'));
+            document.querySelectorAll('.nav-top-btn').forEach(el => el.classList.add('hover:bg-gray-800')); 
+
+            const target = 'view-' + viewId;
+            document.getElementById(target).classList.add('active');
+            state.activeView = target;
+            saveState();
+
+            const topMap = { 'daily': 0, 'weekly': 1, 'monthly': 2, 'annual': 3, 'projects': 4, 'contexts': 5 };
+            const topBtns = document.querySelectorAll('.nav-top-btn');
+            if (topMap[viewId] !== undefined && topBtns[topMap[viewId]]) {
+                topBtns[topMap[viewId]].classList.add('bg-gray-800', 'text-white');
+                topBtns[topMap[viewId]].classList.remove('hover:bg-gray-800');
+            }
+
+            if(viewId === 'daily') { renderDailyTimeline(); checkCritical(); loadDailyInputs(); }
+            if(viewId === 'weekly') renderWeekly();
+            if(viewId === 'monthly') renderMonthly();
+            if(viewId === 'annual') renderAnnual();
+            if(viewId === 'projects') renderProj();
+            if(viewId === 'contexts') initContexts();
+        }
+
+        // --- 3. UPDATED HUD (SIDEBAR ALERTS) ---
+        function updateHUD() {
+            state.daily.p1 = document.getElementById('p1').value;
+            state.daily.p2 = document.getElementById('p2').value;
+            state.daily.p3 = document.getElementById('p3').value;
+            saveState();
+
+            const pHud = document.getElementById('alert-priority-content');
+            let hasPrio = false;
+            let pContent = '';
+            for(let i=1; i<=3; i++) {
+                const val = state.daily['p'+i];
+                if(val) { pContent += `<div style="margin-bottom:3px;">• ${val}</div>`; hasPrio = true; }
+            }
+            pHud.innerHTML = hasPrio ? pContent : 'Defina no Diário...';
+
+            const rHud = document.getElementById('alert-risk-content');
+            let rContent = '';
+            const riskProj = state.projects['risk'];
+            if(riskProj && riskProj.actions.length > 0) {
+                riskProj.actions.slice(0,3).forEach(a => { if(a) rContent += `<div style="margin-bottom:3px;">• ${a}</div>`; });
+            }
+            rHud.innerHTML = rContent || 'Nenhum risco registrado.';
+
+            updateShoppingAlert();
+        }
+
+        function updateShoppingAlert() {
+            const shopContainer = document.getElementById('ctx-compras');
+            if(!shopContainer) return;
+            const inputs = shopContainer.querySelectorAll('input.prio-input');
+            let content = '';
+            let count = 0;
+            const shopData = []; 
+            inputs.forEach(inp => {
+                shopData.push(inp.value);
+                if(inp.value.trim() !== '' && count < 5) {
+                    content += `<div style="margin-bottom:3px;">🛒 ${inp.value}</div>`;
+                    count++;
+                }
+            });
+            state.contexts.compras = shopData;
+            saveState();
+
+            const alertBox = document.getElementById('alert-shopping-content');
+            alertBox.innerHTML = content || 'Lista vazia.';
+        }
+
+        function checkCritical() {
+            const todayStr = document.getElementById('daily-date').value || new Date().toISOString().split('T')[0];
+            state.daily.date = todayStr; 
+            const today = new Date(todayStr + "T12:00:00");
+            
+            const alertBox = document.getElementById('alert-critical-card');
+            const alertContent = document.getElementById('alert-critical-content');
+            const pageBanner = document.getElementById('page-crit-banner');
+            
+            const upcoming = state.events
+                .map(e => {
+                    const eDate = new Date(e.date + "T12:00:00");
+                    const diffTime = eDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return { ...e, diffDays, eDate };
+                })
+                .filter(e => e.diffDays >= 0) 
+                .sort((a,b) => a.diffDays - b.diffDays);
+
+            if(upcoming.length > 0) {
+                let html = '';
+                let isTodayCrit = false;
+                
+                upcoming.forEach(ev => {
+                    const dateFmt = `${ev.eDate.getDate().toString().padStart(2,'0')}/${(ev.eDate.getMonth()+1).toString().padStart(2,'0')}`;
+                    let timeStr = `(${ev.diffDays}d)`;
+                    let styleClass = '';
+                    
+                    if(ev.diffDays === 0) {
+                        timeStr = '(HOJE)';
+                        styleClass = 'text-red-600 font-black';
+                        isTodayCrit = true;
+                        pageBanner.style.display = 'block'; 
+                        pageBanner.innerText = `🚨 ALERTA: ${ev.desc}`;
+                    }
+                    
+                    html += `<div class="mb-1 ${styleClass} border-b border-gray-100 pb-1 last:border-0">
+                        <span class="font-bold text-xs mr-1">${dateFmt}</span>
+                        <span class="text-[10px] opacity-75 mr-1">${timeStr}</span>
+                        <span>${ev.desc}</span>
+                    </div>`;
+                });
+
+                alertContent.innerHTML = html;
+                
+                if(isTodayCrit) {
+                    alertBox.classList.remove('opacity-50', 'bg-gray-50', 'border-gray-300');
+                    alertBox.classList.add('bg-red-50', 'border-red-500', 'animate-pulse');
+                    alertBox.querySelector('.lucide-alert-triangle').parentElement.classList.remove('text-gray-600');
+                    alertBox.querySelector('.lucide-alert-triangle').parentElement.classList.add('text-red-700');
+                } else {
+                    alertBox.classList.remove('opacity-50', 'bg-gray-50', 'border-gray-300', 'animate-pulse');
+                    alertBox.classList.add('bg-orange-50', 'border-orange-400');
+                    alertBox.querySelector('.lucide-alert-triangle').parentElement.classList.remove('text-gray-600');
+                    alertBox.querySelector('.lucide-alert-triangle').parentElement.classList.add('text-orange-700');
+                    pageBanner.style.display = 'none';
+                }
+            } else {
+                alertContent.innerText = 'Nenhum evento registrado.';
+                alertBox.className = "bg-gray-50 border-l-4 border-gray-300 p-3 rounded-r-md shadow-sm transition-all duration-300 opacity-50"; 
+                alertBox.querySelector('.lucide-alert-triangle').parentElement.className = "flex items-center gap-2 text-gray-600 font-bold text-xs uppercase mb-2";
+                pageBanner.style.display = 'none';
+            }
+            saveState();
+        }
+
+        // --- 4. CONTEXTS LOGIC ---
+        function initContexts() {
+            const ctxIds = ['ctx-casa', 'ctx-compras', 'ctx-adm'];
+            
+            ctxIds.forEach(id => {
+                const el = document.getElementById(id);
+                const key = id.replace('ctx-', '');
+                const savedData = state.contexts[key] || [];
+                
+                el.innerHTML = '';
+                for(let i=0; i<15; i++) { 
+                    const extraAttrib = (id === 'ctx-compras') ? 'oninput="updateShoppingAlert()"' : `oninput="saveContextData('${key}')"`;
+                    const val = savedData[i] || '';
+                    el.innerHTML += `<div class="proj-item"><div class="prio-check" onclick="this.classList.toggle('checked')"></div><input class="prio-input" value="${val}" ${extraAttrib}></div>`; 
+                }
+            });
+            updateShoppingAlert();
+        }
+
+        function saveContextData(key) {
+            const container = document.getElementById('ctx-' + key);
+            const inputs = container.querySelectorAll('input.prio-input');
+            const data = [];
+            inputs.forEach(inp => data.push(inp.value));
+            state.contexts[key] = data;
+            saveState();
+        }
+
+        function resetContexts() { 
+            state.contexts = { casa:[], compras:[], adm:[] };
+            saveState();
+            initContexts(); 
+        }
+
+        // --- 5. CORE LOGIC (Preserved) ---
+        function renderDailyTimeline() {
+            const el = document.getElementById('daily-timeline');
+            if(el.innerHTML.trim() === '') {
+                for(let h=7; h<=23; h++) {
+                    el.innerHTML += `<div class="time-slot"><div class="ts-label">${h.toString().padStart(2,'0')}:00</div><div style="flex:1;" contenteditable="true"></div></div>`;
+                }
+            }
+        }
+
+        function loadDailyInputs() {
+            if(state.daily.p1) document.getElementById('p1').value = state.daily.p1;
+            if(state.daily.p2) document.getElementById('p2').value = state.daily.p2;
+            if(state.daily.p3) document.getElementById('p3').value = state.daily.p3;
+            if(state.daily.date) document.getElementById('daily-date').value = state.daily.date;
+            updateHUD();
+        }
+
+        function setTemplate(type) {
+            document.querySelectorAll('.block-routine').forEach(e => e.remove());
+            document.getElementById('daily-mode-badge').style.display = 'none';
+            const label = document.getElementById('day-label');
+            const tl = document.getElementById('daily-timeline');
+            const map = {
+                'seg': 'SEGUNDA-FEIRA', 'ter': 'TERÇA-FEIRA', 'qua': 'QUARTA-FEIRA', 
+                'qui': 'QUINTA-FEIRA', 'sex': 'SEXTA-FEIRA', 'sab': 'SÁBADO', 'dom': 'DOMINGO',
+                'folga': 'SEGUNDA (FOLGA)', 'ataque': 'FIM DE SEMANA', 'hmv': 'PLANTÃO EXTRA'
+            };
+            for(let key in map) if(type.includes(key)) label.innerText = map[key];
+            const add = (s, e, txt, style='grey') => {
+                const total = 17; 
+                const top = ((s-7)/total)*100;
+                const h = ((e-s)/total)*100;
+                const div = document.createElement('div');
+                div.className = `block-routine block-${style}`;
+                div.innerText = txt;
+                div.style.top = `calc(${top}% + 1px)`;
+                div.style.height = `calc(${h}% - 2px)`;
+                tl.appendChild(div);
+            };
+            if(type === 'A-seg') { add(17, 19.5, "OFF / SONO (BUFFER)", "alert"); add(19.5, 20, "PLANEJAMENTO 📝"); add(20, 23, "PLANTÃO UTI (NOITE)", "dark"); }
+            else if(type === 'F-folga') { document.getElementById('daily-mode-badge').style.display = 'block'; add(20, 20.5, "PLANEJAMENTO 📝"); }
+            else if(type === 'A-ter') { add(7, 8, "PÓS-PLANTÃO"); add(8, 12, "RECUPERAÇÃO / SONO", "grey"); add(20, 20.5, "PLANEJAMENTO 📝"); }
+            else if(type === 'G-ter') { add(8, 12, "ESTUDO FOCADO (PROVA) 🎯", "alert"); add(20, 20.5, "PLANEJAMENTO 📝"); }
+            else if(type === 'B-manut') { add(8, 16, "PLANTÃO UTI", "dark"); add(20, 20.5, "PLANEJAMENTO 📝"); }
+            else if(type === 'B-qui') { add(12, 20, "PLANTÃO UTI", "dark"); add(20, 20.5, "PLANEJAMENTO 📝"); }
+            else if(type === 'C-ataque') { document.getElementById('daily-mode-badge').style.display = 'block'; add(20, 20.5, "PLANEJAMENTO 📝"); }
+            else if(type === 'D-hmv') { add(8, 20, "PLANTÃO HMV (DIA)", "dark"); add(20, 20.5, "PLANEJAMENTO 📝"); }
+            else if(type === 'E-hmv') { add(17, 19.5, "BUFFER SONO", "alert"); add(19.5, 20, "PLANEJAMENTO"); add(20, 23, "PLANTÃO HMV (NOITE)", "dark"); }
+        }
+
+        // --- WEEKLY ---
+        let showWeekRout = true;
+        function toggleWeekRoutine() { showWeekRout = !showWeekRout; renderWeekly(); }
+        function renderWeekly() {
+            const grid = document.getElementById('week-grid');
+            grid.innerHTML = '';
+            const inp = document.getElementById('week-start').value || new Date().toISOString().split('T')[0];
+            const d = new Date(inp + "T12:00:00");
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            const start = new Date(d.setDate(diff));
+            const end = new Date(start); end.setDate(start.getDate()+6);
+            document.getElementById('week-label').innerText = `Semana: ${start.getDate()}/${start.getMonth()+1} a ${end.getDate()}/${end.getMonth()+1}`;
+            const banner = document.getElementById('week-crit-banner');
+            banner.style.display = 'none'; banner.innerText = '';
+            state.events.forEach(ev => {
+                const ed = new Date(ev.date + "T12:00:00");
+                if(ed >= start && ed <= end) { banner.style.display = 'block'; banner.innerText += ` [${ev.date}: ${ev.desc}] `; }
+            });
+            const names = ['SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO','DOMINGO'];
+            const keys = ['seg','ter','qua','qui','sex','sab','dom'];
+            names.forEach((name, i) => {
+                const curr = new Date(start); curr.setDate(start.getDate()+i);
+                const col = document.createElement('div');
+                col.className = 'wk-col';
+                let routine = '';
+                if(showWeekRout) {
+                    const h = 18; const pos = (s, e) => `top:${((s-6)/h)*100}%; height:${((e-s)/h)*100}%;`;
+                    const k = keys[i];
+                    if(k=='seg') routine = `<div class="block-routine" style="${pos(17,20)} background:#f4f4f4;">OFF</div><div class="block-routine" style="${pos(20,24)} background:#333; color:#fff;">PLANTÃO</div>`;
+                    if(k=='ter') routine = `<div class="block-routine" style="${pos(8,12)} background:#f4f4f4;">SONO</div>`;
+                    if(k=='qua') routine = `<div class="block-routine" style="${pos(8,16)} background:#ccc;">PLANTÃO</div>`;
+                    if(k=='qui') routine = `<div class="block-routine" style="${pos(12,20)} background:#ccc;">PLANTÃO</div>`;
+                    if(k=='sex') routine = `<div class="block-routine" style="${pos(8,12)} background:#ccc;">PLANTÃO</div>`;
+                }
+                col.innerHTML = `<div class="wk-header">${name} <br> <span style="font-weight:normal; color:#777;">${curr.getDate()}</span></div><div class="wk-body" contenteditable="true">${routine}</div><div class="wk-footer"><span>💤</span><span>💧</span><span>🏋️</span></div>`;
+                grid.appendChild(col);
+            });
+        }
+
+        // --- MONTHLY ---
+        function addCritical() {
+            const dt = document.getElementById('new-crit-date').value;
+            const desc = document.getElementById('new-crit-desc').value;
+            if(!dt || !desc) return;
+            state.events.push({date: dt, desc: desc});
+            alert("Evento Salvo! Verifique Diário/Semanal.");
+            saveState();
+            renderMonthly();
+            checkCritical(); 
+        }
+        function renderMonthly() {
+            const grid = document.getElementById('month-grid'); grid.innerHTML = '';
+            const val = document.getElementById('month-start').value;
+            const d = new Date(val + "T12:00:00");
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            const start = new Date(d.setDate(diff));
+            for(let i=0; i<35; i++) {
+                const curr = new Date(start); curr.setDate(start.getDate()+i);
+                const iso = curr.toISOString().split('T')[0];
+                const ev = state.events.find(e => e.date === iso);
+                const div = document.createElement('div');
+                div.className = 'm-cell';
+                let contentHTML = `<div class="m-content" contenteditable="true"></div>`;
+                div.innerHTML = `<div style="text-align:right; font-weight:bold;">${curr.getDate()}</div>${contentHTML}`;
+                if(ev) div.innerHTML += `<div class="event-tag tag-crit">${ev.desc}</div>`;
+                const wd = curr.getDay();
+                if(!ev && (wd===1 || wd===3 || wd===4 || wd===5)) div.innerHTML += `<div class="event-tag tag-shift">PLANTÃO</div>`;
+                grid.appendChild(div);
+            }
+            document.getElementById('month-title').innerText = new Date(val).toLocaleString('pt-BR', {month:'long'}).toUpperCase();
+        }
+
+        // --- ANNUAL ---
+        function renderAnnual() {
+            const y = document.getElementById('year-val').value;
+            document.getElementById('year-disp').innerText = y;
+            const ms = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+            for(let i=1; i<=4; i++) {
+                const el = document.getElementById('q'+i); el.innerHTML = '';
+                el.innerHTML = `<div style="text-align:center; font-weight:bold; border-bottom:1px solid #000;">Q${i}</div>`;
+                for(let j=0; j<3; j++) {
+                    el.innerHTML += `<div style="border:1px solid #ccc; flex:1; padding:5px; font-size:0.7rem; display:flex; flex-direction:column;"><div style="font-weight:bold; border-bottom:1px solid #eee;">${ms[(i-1)*3+j]}</div><div style="flex:1" contenteditable="true"></div></div>`;
+                }
+            }
+        }
+
+        // --- PROJECTS ---
+        function newProject() {
+            const name = prompt("Nome do Projeto:");
+            if(!name) return;
+            const id = 'p_' + Date.now();
+            state.projects[id] = { title: name, why: "", phases: ["Start"], actions: ["First Action"] };
+            
+            saveState(); // 1. Save new project to state
+            
+            // 2. Re-populate select (This ensures the new option appears)
+            const sel = document.getElementById('proj-select');
+            sel.innerHTML = ''; // Clear current options
+            for (const [key, proj] of Object.entries(state.projects)) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = proj.title;
+                if(key === 'risk') opt.style.backgroundColor = '#FFC107';
+                sel.appendChild(opt);
+            }
+            
+            // 3. Select the new project
+            sel.value = id;
+            
+            // 4. Load it
+            loadProject(id);
+            
+            alert("Projeto Criado com Sucesso! ✅");
+        }
+
+        function loadProject(id) { 
+            state.currentProjId = id; 
+            renderProj(); 
+        }
+        function renderProj() {
+            const p = state.projects[state.currentProjId];
+            document.getElementById('proj-title').value = p.title;
+            document.getElementById('proj-why').value = p.why;
+            const phDiv = document.getElementById('proj-phases'); phDiv.innerHTML = '';
+            p.phases.forEach((x, i) => { phDiv.innerHTML += `<div class="proj-item"><span style="font-weight:bold; margin-right:5px;">${i+1}.</span><input class="prio-input" value="${x}" oninput="updateData('ph',${i},this.value)"></div>`; });
+            const acDiv = document.getElementById('proj-actions'); acDiv.innerHTML = '';
+            p.actions.forEach((x, i) => { acDiv.innerHTML += `<div class="proj-item"><div class="prio-check" onclick="this.classList.toggle('checked')"></div><input class="prio-input" value="${x}" oninput="updateData('ac',${i},this.value)"></div>`; });
+            if(state.currentProjId === 'risk') updateHUD();
+        }
+        function addProjItem(type) {
+            const p = state.projects[state.currentProjId];
+            if(type==='phase') p.phases.push("");
+            if(type==='action') p.actions.push("");
+            saveState();
+            renderProj();
+        }
+        function updateData(type, idx, val) {
+            const p = state.projects[state.currentProjId];
+            if(type==='ph') p.phases[idx] = val;
+            if(type==='ac') p.actions[idx] = val;
+            if(type==='title') {
+                p.title = val;
+                // Update dropdown text immediately
+                const sel = document.getElementById('proj-select');
+                const opt = sel.querySelector(`option[value="${state.currentProjId}"]`);
+                if(opt) opt.innerText = val;
+            }
+            if(type==='why') p.why = val;
+            saveState();
+            if(state.currentProjId === 'risk') updateHUD();
+        }
+        function saveProj() { 
+            updateData('title', 0, document.getElementById('proj-title').value); 
+            updateData('why', 0, document.getElementById('proj-why').value); 
+        }
+
+        function syncDate() { checkCritical(); saveState(); }
+        function togglePrio(idx, checkEl) {
+            checkEl.classList.toggle('checked');
+            const input = document.getElementById('p'+idx);
+            if(checkEl.classList.contains('checked')) {
+                input.classList.add('done');
+                if(input.value) alert(`PARABÉNS! 🏆\nVocê completou: ${input.value}`);
+            } else { input.classList.remove('done'); }
+        }
+
+        // --- IMAGE GEN ---
+        function generateImage() {
+            const active = document.querySelector('.paper.active');
+            const orientation = active.getAttribute('data-orientation');
+            const w = orientation === 'landscape' ? 2598 : 1949;
+            const h = orientation === 'landscape' ? 1949 : 2598;
+            html2canvas(active, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+                const final = document.createElement('canvas');
+                final.width = w; final.height = h;
+                const ctx = final.getContext('2d');
+                ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+                ctx.drawImage(canvas, 0,0,w,h);
+                const url = final.toDataURL("image/png");
+                const modal = document.getElementById('modal');
+                document.getElementById('img-preview').src = url;
+                document.getElementById('dl-link').href = url;
+                document.getElementById('dl-link').download = `NeuroPlanner_${state.activeView}.png`;
+                modal.style.display = 'flex';
+            });
+        }
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+        // INIT LOAD
+        // Populate Project Select from State
+        const projSelect = document.getElementById('proj-select');
+        projSelect.innerHTML = '';
+        for (const [id, proj] of Object.entries(state.projects)) {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.innerText = proj.title;
+            if(id === 'risk') opt.style.backgroundColor = '#FFC107';
+            projSelect.appendChild(opt);
+        }
+        projSelect.value = state.currentProjId;
+
+        setTemplate('A-seg');
+        renderDailyTimeline();
+        loadDailyInputs();
+        renderWeekly();
+        renderMonthly();
+        renderAnnual();
+        renderProj();
+        initContexts();
+    </script>
+</body>
+</html>
