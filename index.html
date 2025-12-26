@@ -195,6 +195,10 @@
                 <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('contexts')">
                     <i data-lucide="list-todo" class="w-4 h-4"></i> <span class="hidden md:inline">Contexto</span>
                 </button>
+                <!-- Logout Button -->
+                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md bg-red-800 hover:bg-red-700 text-sm font-bold transition-colors whitespace-nowrap ml-2" onclick="logout()">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
             </div>
         </header>
 
@@ -455,20 +459,34 @@
         function LoginScreen() {
             const [password, setPassword] = React.useState('');
             const [error, setError] = React.useState('');
+            const [remember, setRemember] = React.useState(false);
+
+            React.useEffect(() => {
+                const isAuth = localStorage.getItem('neuro_auth');
+                if (isAuth === 'true') {
+                   grantAccess();
+                }
+            }, []);
+
+            const grantAccess = () => {
+                document.getElementById('login-root').style.display = 'none';
+                const app = document.getElementById('planner-app');
+                app.style.display = 'flex';
+                
+                if(window.lucide) window.lucide.createIcons();
+                
+                window.dispatchEvent(new Event('resize'));
+            }
 
             const handleLogin = (e) => {
                 e.preventDefault();
                 const CORRECT_PASSWORD = "neuro2025"; 
 
                 if (password === CORRECT_PASSWORD) {
-                    document.getElementById('login-root').style.display = 'none';
-                    const app = document.getElementById('planner-app');
-                    app.style.display = 'flex';
-                    
-                    // Init Icons
-                    if(window.lucide) window.lucide.createIcons();
-                    
-                    window.dispatchEvent(new Event('resize'));
+                    if (remember) {
+                        localStorage.setItem('neuro_auth', 'true');
+                    }
+                    grantAccess();
                 } else {
                     setError('Acesso Negado. Senha incorreta.');
                 }
@@ -487,12 +505,29 @@
                                 <input
                                     type="password"
                                     id="password"
+                                    name="password"
+                                    autoComplete="current-password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black sm:text-sm"
                                     placeholder="Digite sua senha..."
                                 />
                             </div>
+                            
+                            <div className="flex items-center">
+                                <input
+                                    id="remember-me"
+                                    name="remember-me"
+                                    type="checkbox"
+                                    checked={remember}
+                                    onChange={(e) => setRemember(e.target.checked)}
+                                    className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
+                                />
+                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                                    Manter-me conectado
+                                </label>
+                            </div>
+
                             {error && (
                                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                                     <span className="block sm:inline">{error}</span>
@@ -508,7 +543,7 @@
                             </div>
                         </form>
                         <div className="mt-6 text-center text-xs text-gray-400">
-                            v6.7 Secure Mobile Edition
+                            v6.8 Secure Mobile Edition
                         </div>
                     </div>
                 </div>
@@ -587,6 +622,11 @@
                 sb.classList.add('-translate-x-full');
                 ov.classList.add('hidden');
             }
+        }
+
+        function logout() {
+            localStorage.removeItem('neuro_auth');
+            location.reload();
         }
 
         function nav(viewId) {
