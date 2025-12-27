@@ -24,7 +24,8 @@
     <!-- ESTILOS DO PLANNER -->
     <style>
         :root {
-            --sidebar-width: 300px;
+            /* LARGURA AUMENTADA PARA 500PX */
+            --sidebar-width: 500px;
             --bg-app: #f3f4f6; /* gray-100 */
             --bg-panel: #ffffff;
             --primary: #000000;
@@ -155,6 +156,47 @@
         /* Custom Scrollbar for Nav */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* --- SIDEBAR STYLES (AUMENTADOS) --- */
+        .alert-card {
+            border-left-width: 8px; /* Mais grosso */
+            padding: 16px; /* Mais espaçamento */
+        }
+        .alert-title {
+            font-size: 1.1rem; /* Muito maior */
+            font-weight: 900; /* Extra Bold */
+        }
+        .alert-content {
+            font-size: 1rem; /* Maior e legível */
+            font-weight: 700; /* Bold */
+            color: #222; /* Mais escuro */
+        }
+        
+        /* SELECTORS (Time/Energy) */
+        .task-selector {
+            appearance: none;
+            background-color: #f3f4f6;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #6b7280;
+            padding: 2px 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .task-selector:hover { border-color: #d1d5db; }
+        .task-selector:focus { outline: none; }
+
+        .aging-badge {
+            font-size: 0.65rem;
+            color: #ef4444;
+            font-weight: 800;
+            margin-left: 4px;
+            animation: pulse-text 2s infinite;
+        }
+        @keyframes pulse-text { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden">
@@ -170,34 +212,34 @@
             <div class="flex items-center gap-4">
                 <!-- Hamburger Menu Button -->
                 <button onclick="toggleSidebar()" class="p-2 hover:bg-gray-700 rounded-md transition-colors focus:outline-none">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
+                    <i data-lucide="menu" class="w-8 h-8"></i> <!-- Ícone maior -->
                 </button>
-                <div class="font-black text-xl tracking-wider hidden sm:block">PLANNER <span class="text-gray-400">OS</span></div>
+                <div class="font-black text-2xl tracking-wider hidden sm:block">PLANNER <span class="text-gray-400">OS</span></div>
             </div>
             
             <!-- Navigation Links -->
             <div class="flex gap-2 overflow-x-auto hide-scroll px-2 items-center flex-1 sm:flex-none justify-start sm:justify-end">
-                <button class="nav-top-btn active flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('daily')">
-                    <i data-lucide="calendar" class="w-4 h-4"></i> <span class="hidden md:inline">Diário</span>
+                <button class="nav-top-btn active flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('daily')">
+                    <i data-lucide="calendar" class="w-5 h-5"></i> <span class="hidden md:inline">Diário</span>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('weekly')">
-                    <i data-lucide="calendar-range" class="w-4 h-4"></i> <span class="hidden md:inline">Semanal</span>
+                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('weekly')">
+                    <i data-lucide="calendar-range" class="w-5 h-5"></i> <span class="hidden md:inline">Semanal</span>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('monthly')">
-                    <i data-lucide="calendar-days" class="w-4 h-4"></i> <span class="hidden md:inline">Mensal</span>
+                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('monthly')">
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i> <span class="hidden md:inline">Mensal</span>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('annual')">
-                    <i data-lucide="trending-up" class="w-4 h-4"></i> <span class="hidden md:inline">Anual</span>
+                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('annual')">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i> <span class="hidden md:inline">Anual</span>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('projects')">
-                    <i data-lucide="rocket" class="w-4 h-4"></i> <span class="hidden md:inline">Projetos</span>
+                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('projects')">
+                    <i data-lucide="rocket" class="w-5 h-5"></i> <span class="hidden md:inline">Projetos</span>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-800 text-sm font-bold transition-colors whitespace-nowrap" onclick="nav('contexts')">
-                    <i data-lucide="list-todo" class="w-4 h-4"></i> <span class="hidden md:inline">Contexto</span>
+                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('contexts')">
+                    <i data-lucide="list-todo" class="w-5 h-5"></i> <span class="hidden md:inline">Contexto</span>
                 </button>
                 <!-- Logout Button -->
-                <button class="nav-top-btn flex items-center gap-2 px-3 py-2 rounded-md bg-red-800 hover:bg-red-700 text-sm font-bold transition-colors whitespace-nowrap ml-2" onclick="logout()">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md bg-red-800 hover:bg-red-700 text-base font-bold transition-colors whitespace-nowrap ml-2" onclick="logout()">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
                 </button>
             </div>
         </header>
@@ -207,57 +249,57 @@
             <!-- OVERLAY (Mobile) -->
             <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
 
-            <!-- BARRA LATERAL (ALERTAS) -->
-            <nav id="sidebar" class="sidebar-transition absolute lg:relative w-80 bg-white border-r border-gray-200 h-full z-40 transform -translate-x-full lg:translate-x-0 flex flex-col shadow-xl lg:shadow-none">
+            <!-- BARRA LATERAL (ALERTAS AUMENTADA) -->
+            <nav id="sidebar" class="sidebar-transition absolute lg:relative bg-white border-r border-gray-200 h-full z-40 transform -translate-x-full lg:translate-x-0 flex flex-col shadow-xl lg:shadow-none" style="width: var(--sidebar-width);">
                 
                 <div class="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between lg:hidden">
-                    <span class="font-bold text-gray-700">ALERTAS & HUD</span>
-                    <button onclick="toggleSidebar()" class="text-gray-500"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    <span class="font-black text-xl text-gray-800">ALERTAS & HUD</span>
+                    <button onclick="toggleSidebar()" class="text-gray-600 hover:text-black"><i data-lucide="x" class="w-8 h-8"></i></button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="flex-1 overflow-y-auto p-6 space-y-6">
                     
                     <!-- ALERTA CRÍTICO (RADAR DE EVENTOS) -->
-                    <div id="alert-critical-card" class="bg-gray-50 border-l-4 border-gray-300 p-3 rounded-r-md shadow-sm transition-all duration-300 opacity-50">
+                    <div id="alert-critical-card" class="bg-gray-50 border-gray-300 rounded-r-md shadow-sm transition-all duration-300 opacity-50 alert-card">
                         <!-- Added ID for direct access -->
-                        <div id="alert-critical-header" class="flex items-center gap-2 text-gray-600 font-bold text-xs uppercase mb-2">
-                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Próximos Eventos Críticos
+                        <div id="alert-critical-header" class="flex items-center gap-3 text-gray-700 alert-title mb-3">
+                            <i data-lucide="alert-triangle" class="w-6 h-6"></i> Próximos Eventos
                         </div>
-                        <div id="alert-critical-content" class="text-sm text-gray-500 italic space-y-1">
+                        <div id="alert-critical-content" class="alert-content text-gray-500 italic space-y-2">
                             Nenhum evento registrado.
                         </div>
                     </div>
 
                     <!-- PRIORIDADES -->
-                    <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded-r-md shadow-sm">
-                        <div class="flex items-center gap-2 text-green-700 font-bold text-xs uppercase mb-2">
-                            <i data-lucide="target" class="w-4 h-4"></i> Prioridades do Dia
+                    <div class="bg-green-50 border-green-500 rounded-r-md shadow-sm alert-card">
+                        <div class="flex items-center gap-3 text-green-800 alert-title mb-3">
+                            <i data-lucide="target" class="w-6 h-6"></i> Prioridades do Dia
                         </div>
-                        <div id="alert-priority-content" class="text-sm text-gray-600 italic">Defina no Diário...</div>
+                        <div id="alert-priority-content" class="alert-content text-gray-700 italic">Defina no Diário...</div>
                     </div>
 
                     <!-- RISCO -->
-                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-r-md shadow-sm">
-                        <div class="flex items-center gap-2 text-yellow-700 font-bold text-xs uppercase mb-2">
-                            <i data-lucide="alert-circle" class="w-4 h-4"></i> Risco Procrastinação
+                    <div class="bg-yellow-50 border-yellow-500 rounded-r-md shadow-sm alert-card">
+                        <div class="flex items-center gap-3 text-yellow-800 alert-title mb-3">
+                            <i data-lucide="alert-circle" class="w-6 h-6"></i> Risco Procrastinação
                         </div>
-                        <div id="alert-risk-content" class="text-sm text-gray-600 italic">Nenhum risco.</div>
+                        <div id="alert-risk-content" class="alert-content text-gray-700 italic">Nenhum risco.</div>
                     </div>
 
                     <!-- COMPRAS -->
-                    <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-md shadow-sm">
-                        <div class="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase mb-2">
-                            <i data-lucide="shopping-cart" class="w-4 h-4"></i> Compras / Farmácia
+                    <div class="bg-blue-50 border-blue-500 rounded-r-md shadow-sm alert-card">
+                        <div class="flex items-center gap-3 text-blue-800 alert-title mb-3">
+                            <i data-lucide="shopping-cart" class="w-6 h-6"></i> Compras / Farmácia
                         </div>
-                        <div id="alert-shopping-content" class="text-sm text-gray-600 italic">Lista vazia.</div>
+                        <div id="alert-shopping-content" class="alert-content text-gray-700 italic">Lista vazia.</div>
                     </div>
 
                 </div>
 
-                <div class="p-4 border-t border-gray-200 bg-gray-50">
-                    <button onclick="generateImage()" class="w-full bg-black text-white py-3 rounded-lg font-bold shadow hover:bg-gray-800 transition-colors flex flex-col items-center justify-center">
-                        <span class="flex items-center gap-2"><i data-lucide="camera" class="w-4 h-4"></i> GERAR IMAGEM</span>
-                        <span class="text-[10px] font-normal opacity-70 mt-1">Auto-Detectar Formato (A4)</span>
+                <div class="p-6 border-t border-gray-200 bg-gray-50">
+                    <button onclick="generateImage()" class="w-full bg-black text-white py-4 rounded-xl font-black shadow-lg hover:bg-gray-800 transition-colors flex flex-col items-center justify-center action-btn">
+                        <span class="flex items-center gap-3"><i data-lucide="camera" class="w-6 h-6"></i> GERAR IMAGEM</span>
+                        <span class="text-xs font-bold opacity-80 mt-1 uppercase tracking-wider">Formato A4 (Alta Resolução)</span>
                     </button>
                 </div>
             </nav>
@@ -407,12 +449,12 @@
                     <h1 class="border-b-4 border-black mb-4 pb-2 text-2xl font-black">LISTAS DE CONTEXTO (GTD)</h1>
                     <div class="ctx-container">
                         <div class="ctx-box">
-                            <div class="ctx-title">🏡 @CASA (Manutenção)</div>
-                            <div id="ctx-casa" class="ctx-list"></div>
-                        </div>
-                        <div class="ctx-box">
                             <div class="ctx-title">🛒 @COMPRAS (Rua/Web)</div>
                             <div id="ctx-compras" class="ctx-list"></div>
+                        </div>
+                        <div class="ctx-box">
+                            <div class="ctx-title">🏡 @CASA (Manutenção)</div>
+                            <div id="ctx-casa" class="ctx-list"></div>
                         </div>
                         <div class="ctx-box">
                             <div class="ctx-title">📂 @PENDÊNCIAS ADM (Burocracia)</div>
@@ -544,7 +586,7 @@
                             </div>
                         </form>
                         <div className="mt-6 text-center text-xs text-gray-400">
-                            v6.11 Secure Mobile Edition
+                            v7.1 Secure Mobile Edition
                         </div>
                     </div>
                 </div>
@@ -568,9 +610,9 @@
 
         // Initialize or Repair State
         const defaultProjects = {
-            rotem: { title: "APP ROTEM", why: "Autonomia", phases: ["MVP", "Design"], actions: ["Definir regras"] },
-            mestrado: { title: "MESTRADO", why: "Título", phases: ["Ética", "Coleta"], actions: ["Email TI"] },
-            risk: { title: "RISCO PROCRASTINAÇÃO", why: "Evitar acumular", phases: ["Urgente", "Médio"], actions: ["Pagar boleto", "Agendar médico"] }
+            rotem: { title: "APP ROTEM", why: "Autonomia", phases: ["MVP", "Design"], actions: [{text: "Definir regras", time: "", energy: "", created: Date.now()}] },
+            mestrado: { title: "MESTRADO", why: "Título", phases: ["Ética", "Coleta"], actions: [{text: "Email TI", time: "", energy: "", created: Date.now()}] },
+            risk: { title: "RISCO PROCRASTINAÇÃO", why: "Evitar acumular", phases: ["Urgente", "Médio"], actions: [{text: "Pagar boleto", time: "", energy: "", created: Date.now()}] }
         };
         
         // Add 10 blank projects to defaults
@@ -579,7 +621,7 @@
                 title: `PROJETO EM BRANCO ${i}`, 
                 why: "Escreva o motivo aqui...", 
                 phases: ["Fase 1"], 
-                actions: ["Ação 1"] 
+                actions: [{text: "Ação 1", time: "", energy: "", created: Date.now()}] 
             };
         }
 
@@ -680,7 +722,11 @@
             let rContent = '';
             const riskProj = state.projects['risk'];
             if(riskProj && riskProj.actions.length > 0) {
-                riskProj.actions.slice(0,3).forEach(a => { if(a) rContent += `<div style="margin-bottom:3px;">• ${a}</div>`; });
+                // Actions can be strings or objects now. Handle both for display.
+                riskProj.actions.slice(0,3).forEach(a => { 
+                    const text = (typeof a === 'string') ? a : a.text;
+                    if(text) rContent += `<div style="margin-bottom:3px;">• ${text}</div>`; 
+                });
             }
             rHud.innerHTML = rContent || 'Nenhum risco registrado.';
 
@@ -745,13 +791,15 @@
                         pageBanner.innerText = `🚨 ALERTA: ${ev.desc}`;
                     }
                     
-                    html += `<div class="mb-1 ${styleClass} border-b border-gray-100 pb-1 last:border-0 flex justify-between items-center">
-                        <div>
-                            <span class="font-bold text-xs mr-1">${dateFmt}</span>
-                            <span class="text-[10px] opacity-75 mr-1">${timeStr}</span>
-                            <span>${ev.desc}</span>
+                    html += `<div class="mb-2 ${styleClass} border-b border-gray-200 pb-2 last:border-0 flex justify-between items-center">
+                        <div class="w-full">
+                            <div class="flex justify-between w-full mb-1">
+                                <span class="font-black text-sm mr-2">${dateFmt}</span>
+                                <span class="font-bold text-xs opacity-90">${timeStr}</span>
+                            </div>
+                            <div class="font-bold text-sm leading-tight break-words">${ev.desc}</div>
                         </div>
-                        <button onclick="deleteCritical(${ev.id})" class="text-gray-400 hover:text-red-600 text-xs ml-2" title="Excluir">🗑️</button>
+                        <button onclick="deleteCritical(${ev.id})" class="text-gray-400 hover:text-red-600 text-xs ml-2 self-start" title="Excluir">🗑️</button>
                     </div>`;
                 });
 
@@ -771,8 +819,8 @@
                 }
             } else {
                 alertContent.innerText = 'Nenhum evento registrado.';
-                alertBox.className = "bg-gray-50 border-l-4 border-gray-300 p-3 rounded-r-md shadow-sm transition-all duration-300 opacity-50"; 
-                alertHeader.className = "flex items-center gap-2 text-gray-600 font-bold text-xs uppercase mb-2";
+                alertBox.className = "bg-gray-50 border-l-4 border-gray-300 p-3 rounded-r-md shadow-sm transition-all duration-300 opacity-50 alert-card"; 
+                alertHeader.className = "flex items-center gap-3 text-gray-700 alert-title mb-3";
                 pageBanner.style.display = 'none';
             }
             saveState();
@@ -780,7 +828,7 @@
 
         // --- 4. CONTEXTS LOGIC ---
         function initContexts() {
-            const ctxIds = ['ctx-casa', 'ctx-compras', 'ctx-adm'];
+            const ctxIds = ['ctx-compras', 'ctx-casa', 'ctx-adm'];
             
             ctxIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -969,7 +1017,7 @@
             const name = prompt("Nome do Projeto:");
             if(!name) return;
             const id = 'p_' + Date.now();
-            state.projects[id] = { title: name, why: "", phases: ["Start"], actions: ["First Action"] };
+            state.projects[id] = { title: name, why: "", phases: ["Start"], actions: [{text: "First Action", time: "", energy: "", created: Date.now()}] };
             
             saveState(); // 1. Save new project to state
             
@@ -1001,26 +1049,87 @@
             const p = state.projects[state.currentProjId];
             document.getElementById('proj-title').value = p.title;
             document.getElementById('proj-why').value = p.why;
+            
+            // Render Phases
             const phDiv = document.getElementById('proj-phases'); phDiv.innerHTML = '';
-            p.phases.forEach((x, i) => { phDiv.innerHTML += `<div class="proj-item"><span style="font-weight:bold; margin-right:5px;">${i+1}.</span><input class="prio-input" value="${x}" oninput="updateData('ph',${i},this.value)"></div>`; });
+            p.phases.forEach((x, i) => { 
+                phDiv.innerHTML += `<div class="proj-item"><span style="font-weight:bold; margin-right:5px;">${i+1}.</span><input class="prio-input" value="${x}" oninput="updateData('ph',${i},this.value)"></div>`; 
+            });
+
+            // Render Actions (Now with objects)
             const acDiv = document.getElementById('proj-actions'); acDiv.innerHTML = '';
-            p.actions.forEach((x, i) => { acDiv.innerHTML += `<div class="proj-item"><div class="prio-check" onclick="this.classList.toggle('checked')"></div><input class="prio-input" value="${x}" oninput="updateData('ac',${i},this.value)"></div>`; });
+            
+            // Migration check inside loop (safe)
+            p.actions.forEach((act, i) => {
+                // Ensure act is object
+                if(typeof act === 'string') act = {text: act, time: "", energy: "", created: Date.now()};
+                
+                // Calculate Aging
+                const daysOld = Math.floor((Date.now() - (act.created || Date.now())) / (1000 * 60 * 60 * 24));
+                let agingHTML = '';
+                if(daysOld > 1) agingHTML = `<span class="aging-badge">+${daysOld}d</span>`;
+
+                acDiv.innerHTML += `
+                    <div class="proj-item flex items-center gap-2 py-2 border-b border-gray-100">
+                        <div class="prio-check" onclick="this.classList.toggle('checked')"></div>
+                        <input class="prio-input flex-1" value="${act.text}" oninput="updateActionText(${i}, this.value)">
+                        
+                        <!-- Time Selector -->
+                        <select onchange="updateActionAttr(${i}, 'time', this.value)" class="task-selector ${act.time ? 'bg-gray-200 text-gray-800' : ''}">
+                            <option value="" ${act.time===""?'selected':''}>⏱️</option>
+                            <option value="2min" ${act.time==="2min"?'selected':''}>2m</option>
+                            <option value="5min" ${act.time==="5min"?'selected':''}>5m</option>
+                            <option value="15min" ${act.time==="15min"?'selected':''}>15m</option>
+                            <option value="30min" ${act.time==="30min"?'selected':''}>30m</option>
+                            <option value="1h" ${act.time==="1h"?'selected':''}>1h</option>
+                        </select>
+
+                        <!-- Energy Selector -->
+                        <select onchange="updateActionAttr(${i}, 'energy', this.value)" class="task-selector ${act.energy ? 'bg-gray-200 text-gray-800' : ''}">
+                            <option value="" ${act.energy===""?'selected':''}>⚡</option>
+                            <option value="low" ${act.energy==="low"?'selected':''}>🟢</option>
+                            <option value="med" ${act.energy==="med"?'selected':''}>🟡</option>
+                            <option value="high" ${act.energy==="high"?'selected':''}>🔴</option>
+                        </select>
+
+                        ${agingHTML}
+                    </div>`;
+            });
             if(state.currentProjId === 'risk') updateHUD();
         }
+
         function addProjItem(type) {
             const p = state.projects[state.currentProjId];
             if(type==='phase') p.phases.push("");
-            if(type==='action') p.actions.push("");
+            if(type==='action') p.actions.push({text: "", time: "", energy: "", created: Date.now()});
             saveState();
             renderProj();
         }
+
+        // New specific update functions for the complex object structure
+        function updateActionText(idx, val) {
+            const p = state.projects[state.currentProjId];
+            // Ensure object
+            if(typeof p.actions[idx] === 'string') p.actions[idx] = {text: p.actions[idx], created: Date.now()};
+            p.actions[idx].text = val;
+            saveState();
+            if(state.currentProjId === 'risk') updateHUD();
+        }
+
+        function updateActionAttr(idx, attr, val) {
+            const p = state.projects[state.currentProjId];
+            if(typeof p.actions[idx] === 'string') p.actions[idx] = {text: p.actions[idx], created: Date.now()};
+            p.actions[idx][attr] = val;
+            saveState();
+            renderProj(); // Re-render to update select styles if needed
+        }
+
         function updateData(type, idx, val) {
             const p = state.projects[state.currentProjId];
             if(type==='ph') p.phases[idx] = val;
-            if(type==='ac') p.actions[idx] = val;
+            // 'ac' legacy support handled by separate functions now, but title/why remains
             if(type==='title') {
                 p.title = val;
-                // Update dropdown text immediately
                 const sel = document.getElementById('proj-select');
                 const opt = sel.querySelector(`option[value="${state.currentProjId}"]`);
                 if(opt) opt.innerText = val;
