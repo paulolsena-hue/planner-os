@@ -219,26 +219,26 @@
             
             <!-- Navigation Links -->
             <div class="flex gap-2 overflow-x-auto hide-scroll px-2 items-center flex-1 sm:flex-none justify-start sm:justify-end">
-                <button class="nav-top-btn active flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('daily')">
-                    <i data-lucide="calendar" class="w-5 h-5"></i> <span class="hidden md:inline">Diário</span>
+                <button title="Diário" class="nav-top-btn active flex items-center justify-center px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('daily')">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('weekly')">
-                    <i data-lucide="calendar-range" class="w-5 h-5"></i> <span class="hidden md:inline">Semanal</span>
+                <button title="Semanal" class="nav-top-btn flex items-center justify-center px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('weekly')">
+                    <i data-lucide="calendar-range" class="w-5 h-5"></i>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('monthly')">
-                    <i data-lucide="calendar-days" class="w-5 h-5"></i> <span class="hidden md:inline">Mensal</span>
+                <button title="Mensal" class="nav-top-btn flex items-center justify-center px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('monthly')">
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('annual')">
-                    <i data-lucide="trending-up" class="w-5 h-5"></i> <span class="hidden md:inline">Anual</span>
+                <button title="Anual" class="nav-top-btn flex items-center justify-center px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('annual')">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('projects')">
-                    <i data-lucide="rocket" class="w-5 h-5"></i> <span class="hidden md:inline">Projetos</span>
+                <button title="Projetos" class="nav-top-btn flex items-center justify-center px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('projects')">
+                    <i data-lucide="rocket" class="w-5 h-5"></i>
                 </button>
-                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('contexts')">
-                    <i data-lucide="list-todo" class="w-5 h-5"></i> <span class="hidden md:inline">Contexto</span>
+                <button title="Contexto" class="nav-top-btn flex items-center justify-center px-4 py-2 rounded-md hover:bg-gray-800 text-base font-bold transition-colors whitespace-nowrap" onclick="nav('contexts')">
+                    <i data-lucide="list-todo" class="w-5 h-5"></i>
                 </button>
                 <!-- Logout Button -->
-                <button class="nav-top-btn flex items-center gap-2 px-4 py-2 rounded-md bg-red-800 hover:bg-red-700 text-base font-bold transition-colors whitespace-nowrap ml-2" onclick="logout()">
+                <button title="Sair" class="nav-top-btn flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-red-800 hover:bg-red-700 text-base font-bold transition-colors whitespace-nowrap ml-2" onclick="logout()">
                     <i data-lucide="log-out" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -448,6 +448,7 @@
                     </div>
                     <h1 class="border-b-4 border-black mb-4 pb-2 text-2xl font-black">LISTAS DE CONTEXTO (GTD)</h1>
                     <div class="ctx-container">
+                        <!-- MUDANÇA: Compras agora é o primeiro -->
                         <div class="ctx-box">
                             <div class="ctx-title">🛒 @COMPRAS (Rua/Web)</div>
                             <div id="ctx-compras" class="ctx-list"></div>
@@ -586,7 +587,7 @@
                             </div>
                         </form>
                         <div className="mt-6 text-center text-xs text-gray-400">
-                            v7.1 Secure Mobile Edition
+                            v7.2 Secure Mobile Edition
                         </div>
                     </div>
                 </div>
@@ -828,6 +829,7 @@
 
         // --- 4. CONTEXTS LOGIC ---
         function initContexts() {
+            // MUDANÇA: 'ctx-compras' movido para o início do array e do HTML
             const ctxIds = ['ctx-compras', 'ctx-casa', 'ctx-adm'];
             
             ctxIds.forEach(id => {
